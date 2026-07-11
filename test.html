@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>yqzan 反代 — 真实卡片预览（演示模式）</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f8fafc;
+      color: #1a1a1a;
+      padding: 32px 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { font-size: 24px; color: #1e293b; margin-bottom: 6px; }
+    .subtitle { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+    .demo-banner {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #1e293b;
+      padding: 14px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      box-shadow: 0 4px 12px rgba(245,158,11,0.2);
+    }
+    .demo-banner strong { color: #7c2d12; }
+    .demo-banner code {
+      background: rgba(255,255,255,0.5);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .note {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #475569;
+      margin-bottom: 28px;
+    }
+    .note strong { color: #6366f1; }
+    .note code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      position: relative;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-color: #c7d2fe;
+    }
+    .card-favicon {
+      display: block;
+      width: 100%;
+      height: 90px;
+      object-fit: contain;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .card-host {
+      font-size: 11px;
+      color: #94a3b8;
+      font-family: ui-monospace, monospace;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.55;
+      margin-bottom: 6px;
+      min-height: 36px;
+    }
+    .card-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .card-tag {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: #eef2ff;
+      color: #6366f1;
+    }
+    .card-tag.niche { color: #f97316; background: #fff7ed; border: 1px solid #fed7aa; }
+    .card-tag.warn { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+    .card-fav {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(99,102,241,0.18);
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 3;
+      font-size: 14px;
+    }
+    .card-fav:hover { color: #f59e0b; }
+
+    /* Toast 提示 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(15,23,42,0.95);
+      color: white;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      max-width: 90vw;
+      z-index: 999999;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .toast strong { color: #fbbf24; }
+    .toast a {
+      color: #a5b4fc;
+      text-decoration: underline;
+      margin-left: 4px;
+    }
+    .toast-close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ yqzan 国外工具反代 · 真实卡片预览</h1>
+    <p class="subtitle">8 个白名单站点 · 双按钮（点卡 = 走代理，点"原站" = 新窗口跳原站）</p>
+
+    <div class="demo-banner">
+      <strong>🎭 演示模式（Demo Mode）</strong> · Worker 还没部署到 Cloudflare，所以点"国内秒开"会弹提示，不会真的跳转。
+      <br>部署后这个提示条会消失，按钮就能正常跳代理了。详细步骤见 <code>README.md</code>。
+    </div>
+
+    <div class="note">
+      <strong>改造对比：</strong>
+      <ul style="margin: 6px 0 0 18px;">
+        <li>改造前：<code>&lt;a class="card" href="https://photopea.com"&gt;</code> → 点卡直接跳原站（卡）</li>
+        <li>改造后：<code>&lt;a class="card" href="https://proxy.yqzan.cn/?d=photopea.com"&gt;</code> → 点卡走代理（秒开）</li>
+        <li>视觉新增：卡片底部多一个 <code>⚡国内秒开</code> chip + <code>原站 ↗</code> 按钮</li>
+      </ul>
+    </div>
+
+    <div class="grid" id="grid">
+      <!-- 数据由 JS 渲染 -->
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <button class="toast-close" onclick="hideToast()">×</button>
+    <div id="toast-msg"></div>
+  </div>
+
+  <script src="inject_proxy_buttons.js"></script>
+  <script>
+    // 模拟 8 张白名单卡片
+    const WHITELIST_TOOLS = [
+      { host: 'photopea.com', title: 'Photopea 在线 PS', desc: '网页版 Photoshop，支持 PSD/AI/Sketch 等格式。无需安装，打开浏览器就能用。', tags: ['niche', '完全免费'] },
+      { host: 'remove.bg', title: 'Remove.bg', desc: 'AI 一键抠图去背景工具，精准快速。每月免费 50 张。', tags: ['warn', '每月 50 张免费'] },
+      { host: 'unsplash.com', title: 'Unsplash', desc: '高质量免费图片素材库，CC0 协议商用无忧。', tags: ['完全免费'] },
+      { host: 'pixabay.com', title: 'Pixabay', desc: '免费图片/视频/音频素材，200 万+ 内容。', tags: ['完全免费'] },
+      { host: 'poki.com', title: 'Poki', desc: '免费在线小游戏，1500+ 款无下载无登录。', tags: ['完全免费'] },
+      { host: 'canva.com', title: 'Canva', desc: '在线平面设计工具，海报/Logo/PPT 一站搞定。', tags: ['每日免费'] },
+      { host: 'mixkit.co', title: 'Mixkit', desc: '免费视频/音频/音效素材，每周更新。', tags: ['完全免费'] },
+      { host: 'ezgif.com', title: 'Ezgif', desc: '在线 GIF 制作/压缩/裁剪工具，零上传云端处理。', tags: ['完全免费'] },
+    ];
+
+    const grid = document.getElementById('grid');
+    WHITELIST_TOOLS.forEach(tool => {
+      const card = document.createElement('a');
+      card.className = 'card';
+      card.href = `https://${tool.host}/`;
+      card.target = '_blank';
+      card.dataset.role = 'newcomer';
+      card.innerHTML = `
+        <img class="card-favicon" src="https://icon.horse/icon/${tool.host}" alt="${tool.host}">
+        <div class="card-title">${tool.title}</div>
+        <div class="card-host">${tool.host}</div>
+        <div class="card-desc">${tool.desc}</div>
+        <div class="card-tags">
+          ${tool.tags.map(t => {
+            const isWarn = t === 'warn';
+            const isNiche = t === 'niche';
+            return `<span class="card-tag${isWarn ? ' warn' : ''}${isNiche ? ' niche' : ''}">${t}</span>`;
+          }).join('')}
+        </div>
+        <button class="card-fav" type="button">☆</button>
+      `;
+      grid.appendChild(card);
+    });
+
+    // 注入脚本已自动跑过（DOMContentLoaded 时）
+  </script>
+
+  <script>
+    // ====== 演示模式：拦截所有"代理卡"点击，弹 toast 提示 ======
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    let toastTimer = null;
+
+    function showToast(msg, duration = 4500) {
+      toastMsg.innerHTML = msg;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, duration);
+    }
+    window.hideToast = function() {
+      toast.classList.remove('show');
+      if (toastTimer) clearTimeout(toastTimer);
+    };
+
+    // 拦截代理卡的整卡点击
+    document.addEventListener('click', e => {
+      // 找带 data-proxy="true" 的卡
+      const card = e.target.closest('a.card[data-proxy="true"]');
+      if (!card) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const host = card.getAttribute('data-original-href') || card.getAttribute('href');
+      showToast(`
+        <strong>⚡ 演示模式</strong><br>
+        Worker 还没部署到 Cloudflare，<br>
+        所以"国内秒开"暂时不会真跳转。<br>
+        <br>
+        部署后点这里就能秒开 <code>${host.replace('https://', '')}</code>
+        <br><br>
+        📖 <a href="README.md" target="_blank">查看 5 步部署文档</a>
+      `, 6000);
+    }, true);
+
+    // 拦截"原站"按钮（演示模式也跳真实原站，让用户能体验原站访问）
+    // 不阻止，让原站按钮正常工作
+
+  </script>
+</body>
+</html>

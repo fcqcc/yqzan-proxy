@@ -1,0 +1,44 @@
+# 依赖
+node_modules/
+.pnp/
+.pnp.js
+
+# 测试覆盖率
+coverage/
+
+# 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.bak
+*.log
+
+# 本地开发
+.server.log
+.server.err
+
+# 截图和测试产物（不部署到 Cloudflare）
+screenshots/
+dom*.html
+chrome*.log
+
+# wrangler 状态
+.wrangler/
+
+# 不要把 deploy 脚本里的所有 .py 都排除（replace-urls.py 是工具）
+*.pyc
+__pycache__/
