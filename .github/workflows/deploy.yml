@@ -1,0 +1,47 @@
+name: Deploy yqzan-proxy Worker
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare-proxy/**'
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-proxy
+          command: deploy
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Test proxy health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://proxy.yqzan.cn/)
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ proxy.yqzan.cn 返回 $STATUS"
+            exit 1
+          fi
+          echo "✅ proxy.yqzan.cn/ → 200"
+          HTML=$(curl -s "https://proxy.yqzan.cn/?d=photopea.com" | head -200)
+          if echo "$HTML" | grep -q '<base href="https://proxy.yqzan.cn/?d=photopea.com">'; then
+            echo "✅ 反代 photopea.com HTML 含 <base> 注入"
+          else
+            echo "❌ 反代 photopea.com HTML 异常"
+            exit 1
+          fi
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://proxy.yqzan.cn/?d=facebook.com")
+          if [ "$STATUS" != "403" ]; then
+            echo "❌ facebook.com 应该 403"
+            exit 1
+          fi
+          echo "✅ 白名单外域名 → 403"
