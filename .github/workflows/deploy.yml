@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'cloudflare-proxy/**'
+      - '**'
   workflow_dispatch:
 jobs:
   deploy:
@@ -17,7 +17,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: cloudflare-proxy
+          workingDirectory: .
           command: deploy
   smoke:
     needs: deploy
