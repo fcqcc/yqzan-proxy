@@ -21,11 +21,13 @@
   'use strict';
 
   // ====== 配置 ======
-  const PROXY_DOMAIN = 'proxy.yqzan.cn';
+  // Worker 部署在 Cloudflare，URL: https://yqzan-proxy.q727705453.workers.dev
+  // 后续如需绑 proxy.yqzan.cn 自定义域名，需把 yqzan.cn NS 切到 Cloudflare
+  const PROXY_DOMAIN = 'yqzan-proxy.q727705453.workers.dev';
   const PROBE_URL = `https://${PROXY_DOMAIN}/`;
-  const PROBE_TIMEOUT_MS = 3000;          // 探测超时
+  const PROBE_TIMEOUT_MS = 3000;
   const STATUS_CACHE_KEY = 'yqzan-proxy-status';
-  const STATUS_CACHE_TTL = 24 * 60 * 60 * 1000;  // 24h 缓存
+  const STATUS_CACHE_TTL = 24 * 60 * 60 * 1000;
 
   // ====== 和 worker.js 保持完全一致 ======
   const WHITELIST = new Set([
