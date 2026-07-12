@@ -275,3 +275,6 @@ A: 改 `worker.js` + `inject_proxy_buttons.js` 两个文件的 WHITELIST，commi
 
 **Q: 为什么不用 Cloudflare Pages + Functions？**
 A: Workers 更轻量、部署更快。Functions 要 Pages 仓库结构，复杂。
+
+<!-- Last deploy trigger: 2026-07-12 -->
+
