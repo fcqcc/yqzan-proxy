@@ -2,8 +2,7 @@ name = "yqzan-proxy"
 main = "worker.js"
 compatibility_date = "2024-09-01"
 
-# 绑自定义域名 proxy.yqzan.cn
-# 首次部署后，CF 会自动加 DNS 记录 + SSL 证书
-routes = [
-  { pattern = "proxy.yqzan.cn", custom_domain = true }
-]
+# 暂不绑自定义域名（yqzan.cn 没托管在 CF，custom_domain 走不通）
+# 用 CF 自动分配的 workers.dev 域名
+# 部署后访问：https://yqzan-proxy.<account-id>.workers.dev
+# 完整 URL 会在 wrangler 部署日志里输出
