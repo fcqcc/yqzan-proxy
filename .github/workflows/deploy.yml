@@ -1,10 +1,12 @@
 name: Deploy yqzan-proxy Worker
+
 on:
   push:
     branches: [main]
     paths:
       - '**'
   workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,6 +14,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
@@ -19,6 +22,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: .
           command: deploy
+
   smoke:
     needs: deploy
     runs-on: ubuntu-latest
@@ -26,22 +30,31 @@ jobs:
     steps:
       - name: Test proxy health
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://proxy.yqzan.cn/)
+          BASE="https://yqzan-proxy.q727705453.workers.dev"
+
+          # 1) 主页
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BASE/)
           if [ "$STATUS" != "200" ]; then
-            echo "❌ proxy.yqzan.cn 返回 $STATUS"
+            echo "FAIL: $BASE/ returned $STATUS, expected 200"
             exit 1
           fi
-          echo "✅ proxy.yqzan.cn/ → 200"
-          HTML=$(curl -s "https://proxy.yqzan.cn/?d=photopea.com" | head -200)
-          if echo "$HTML" | grep -q '<base href="https://proxy.yqzan.cn/?d=photopea.com">'; then
-            echo "✅ 反代 photopea.com HTML 含 <base> 注入"
+          echo "OK: $BASE/ returns 200"
+
+          # 2) 反代 photopea HTML 含 base
+          HTML=$(curl -s "$BASE/?d=photopea.com" | head -200)
+          EXPECTED_BASE="https://yqzan-proxy.q727705453.workers.dev/?d=photopea.com"
+          if echo "$HTML" | grep -q "<base href=\"$EXPECTED_BASE\">"; then
+            echo "OK: photopea proxy contains <base> injection"
           else
-            echo "❌ 反代 photopea.com HTML 异常"
+            echo "FAIL: photopea proxy HTML missing <base>"
+            echo "$HTML" | head -50
             exit 1
           fi
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://proxy.yqzan.cn/?d=facebook.com")
+
+          # 3) 白名单外
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/?d=facebook.com")
           if [ "$STATUS" != "403" ]; then
-            echo "❌ facebook.com 应该 403"
+            echo "FAIL: facebook.com returned $STATUS, expected 403"
             exit 1
           fi
-          echo "✅ 白名单外域名 → 403"
+          echo "OK: non-whitelist domain returns 403"
